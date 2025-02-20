@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Prison Stats</title>
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <h2>Panel</h2>
+            <!-- Выпадающий список для выбора никнейма -->
+            <select id="nickname">
+                <option value="DragonSnel">DragonSnel</option>
+                <option value="key">key</option>
+                <option value="agentxtra">agentxtra</option>
+                <option value="reshef">reshef</option>
+                <option value="Pavel">Pavel</option>
+                <option value="_Tae4ka_">_Tae4ka_</option>
+                <option value="JustS1rez">JustS1rez</option>
+                <option value="yeul">yeul</option>
+            </select>
+            <input type="number" id="money" placeholder="Money">
+            <button id="saveButton">Save</button> <!-- Используем id для кнопки -->
+        </div>
+        
+        <div class="players">
+            <div class="player-card" data-nickname="DragonSnel">
+                <img src="./img/dragon.webp" alt="DragonSnel">
+                <h2>DragonSnel</h2>
+                <h2 class="money">0</h2>
+            </div>
+            <div class="player-card" data-nickname="key">
+                <img src="./img/key.webp" alt="key">
+                <h2>key</h2>
+                <h2 class="money">0</h2>
+            </div>
+            <div class="player-card" data-nickname="agentxtra">
+                <img src="./img/agentxtra.webp" alt="agentxtra">
+                <h2>agentxtra</h2>
+                <h2 class="money">0</h2>
+            </div>
+            <div class="player-card" data-nickname="reshef">
+                <img src="./img/reshef.webp" alt="reshef">
+                <h2>reshef</h2>
+                <h2 class="money">0</h2>
+            </div>
+            <div class="player-card" data-nickname="_Tae4ka_">
+                <img src="./img/tae4ka.webp" alt="_Tae4ka_">
+                <h2>_Tae4ka_</h2>
+                <h2 class="money">0</h2>
+            </div>
+            <div class="player-card" data-nickname="JustS1rez">
+                <img src="./img/just.webp" alt="JustS1rez">
+                <h2>JustS1rez</h2>
+                <h2 class="money">0</h2>
+            </div>
+            <div class="player-card" data-nickname="yeul">
+                <img src="./img/yeul.webp" alt="yeul">
+                <h2>yeul</h2>
+                <h2 class="money">0</h2>
+            </div>
+            <div class="player-card" data-nickname="Pavel">
+                <img src="./img/pavel.webp" alt="Pavel">
+                <h2>Pavel</h2>
+                <h2 class="money">0</h2>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDxwsZk1zZ3hHRwhBjUPboe7V292_nzl-s",
+            authDomain: "prisonstats.firebaseapp.com",
+            projectId: "prisonstats",
+            storageBucket: "prisonstats.firebasestorage.app",
+            messagingSenderId: "49482891741",
+            appId: "1:49482891741:web:f65a2a2d04e9cf0259b634",
+            measurementId: "G-MP8H1Q4LGR"
+        };
+
+        // Инициализация Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Функция добавления денег к игроку
+        async function addMoney() {
+            const nickname = document.getElementById('nickname').value.trim();  // Получаем выбранный никнейм
+            const moneyInput = document.getElementById('money').value;
+            const moneyAmount = parseFloat(moneyInput);
+
+            if (!nickname || isNaN(moneyAmount) || moneyAmount <= 0) {
+                alert('Введите корректные данные');
+                return;
+            }
+
+            // Ссылка на игрока в базе данных
+            const playerRef = doc(db, "players", nickname);
+            const playerSnap = await getDoc(playerRef);  // Получаем данные игрока
+
+            let newAmount = moneyAmount;
+            if (playerSnap.exists()) {
+                // Если игрок уже существует, добавляем деньги к текущему балансу
+                newAmount += playerSnap.data().money;
+                console.log(`Текущий баланс игрока ${nickname}: ${playerSnap.data().money}`);
+            } else {
+                console.log(`Игрок ${nickname} не найден, создаем новый`);
+            }
+
+            // Обновляем поле 'money' в документе игрока
+            try {
+                await updateDoc(playerRef, { money: newAmount });
+                console.log(`Обновлено: новый баланс игрока ${nickname} - ${newAmount}`);
+            } catch (error) {
+                console.error("Ошибка обновления данных в Firebase:", error);
+            }
+
+            // Обновляем данные на карточке игрока в интерфейсе
+            const playerCard = document.querySelector(`.player-card[data-nickname="${nickname}"]`);
+            if (playerCard) {
+                playerCard.querySelector('.money').textContent = newAmount.toFixed(2);  // Показываем новую общую сумму
+            }
+        }
+
+        // Функция для загрузки данных с Firebase
+        async function loadSavedData() {
+            const playerCards = document.querySelectorAll('.player-card');
+            for (const card of playerCards) {
+                const nickname = card.getAttribute('data-nickname');
+                const playerRef = doc(db, "players", nickname);
+                const playerSnap = await getDoc(playerRef);
+
+                if (playerSnap.exists()) {
+                    console.log(`Баланс игрока ${nickname}: ${playerSnap.data().money}`);
+                    card.querySelector('.money').textContent = playerSnap.data().money.toFixed(2);
+                } else {
+                    console.log(`Игрок ${nickname} не найден в базе данных.`);
+                }
+            }
+        }
+
+        // Загружаем данные при загрузке страницы
+        document.addEventListener("DOMContentLoaded", loadSavedData);
+
+        // Привязываем обработчик событий к кнопке
+        document.getElementById('saveButton').addEventListener('click', addMoney);
+    </script>
+</body>
+</html>
