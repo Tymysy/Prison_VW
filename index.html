@@ -25,9 +25,12 @@
                 <option value="kisa">kisa</option>
                 <option value="Muffin">YaMuffin</option>
                 <option value="sxlnce">sxlnce</option>
+                <option value="oleg">olegdd</option>
+                <option value="sxb">sxb</option>
             </select>
             <input type="number" id="money" placeholder="Money">
             <button id="saveButton">Save</button>
+            <button id="resetButton">Reset All</button>
         </div>
         
         <div class="players">
@@ -101,6 +104,16 @@
                 <h2>sxlnce</h2>
                 <h2 class="money">0</h2>
             </div>
+            <div class="player-card" data-nickname="oleg">
+                <img src="./img/oleg.webp" alt="oleg">
+                <h2>oleg</h2>
+                <h2 class="money">0</h2>
+            </div>
+            <div class="player-card" data-nickname="sxb">
+                <img src="./img/sxb.webp" alt="sxb">
+                <h2>sxb</h2>
+                <h2 class="money">0</h2>
+            </div>
         </div>
 
     </div>
@@ -119,11 +132,9 @@
             measurementId: "G-MP8H1Q4LGR"
         };
 
-        // Инициализация Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Функция добавления денег к игроку
         async function addMoney() {
             const nickname = document.getElementById('nickname').value.trim();  // Получаем выбранный никнейм
             const moneyInput = document.getElementById('money').value;
@@ -134,20 +145,17 @@
                 return;
             }
 
-            // Ссылка на игрока в базе данных
             const playerRef = doc(db, "players", nickname);
             const playerSnap = await getDoc(playerRef);  // Получаем данные игрока
 
             let newAmount = moneyAmount;
             if (playerSnap.exists()) {
-                // Если игрок уже существует, добавляем деньги к текущему балансу
                 newAmount += playerSnap.data().money;
                 console.log(`Текущий баланс игрока ${nickname}: ${playerSnap.data().money}`);
             } else {
                 console.log(`Игрок ${nickname} не найден, создаем новый`);
             }
 
-            // Обновляем поле 'money' в документе игрока
             try {
                 await updateDoc(playerRef, { money: newAmount });
                 console.log(`Обновлено: новый баланс игрока ${nickname} - ${newAmount}`);
@@ -155,14 +163,12 @@
                 console.error("Ошибка обновления данных в Firebase:", error);
             }
 
-            // Обновляем данные на карточке игрока в интерфейсе
             const playerCard = document.querySelector(`.player-card[data-nickname="${nickname}"]`);
             if (playerCard) {
                 playerCard.querySelector('.money').textContent = newAmount.toFixed(2);  // Показываем новую общую сумму
             }
         }
 
-        // Функция для загрузки данных с Firebase
         async function loadSavedData() {
             const playerCards = document.querySelectorAll('.player-card');
             for (const card of playerCards) {
@@ -179,10 +185,30 @@
             }
         }
 
-        // Загружаем данные при загрузке страницы
+        async function resetAllBalances() {
+            if (!confirm("Вы уверены, что хотите обнулить баланс у всех игроков?")) return;
+
+            const playerCards = document.querySelectorAll('.player-card');
+            for (const card of playerCards) {
+                const nickname = card.getAttribute('data-nickname');
+                const playerRef = doc(db, "players", nickname);
+
+                try {
+                    await updateDoc(playerRef, { money: 0 });
+                    card.querySelector('.money').textContent = "0.00";
+                    console.log(`Баланс игрока ${nickname} сброшен до 0`);
+                } catch (error) {
+                console.error(`Ошибка при сбросе баланса игрока ${nickname}:`, error);
+                }
+            }
+
+            alert("Баланс всех игроков успешно обнулен!");
+        }
+
+        document.getElementById('resetButton').addEventListener('click', resetAllBalances);
+
         document.addEventListener("DOMContentLoaded", loadSavedData);
 
-        // Привязываем обработчик событий к кнопке
         document.getElementById('saveButton').addEventListener('click', addMoney);
     </script>
 </body>

@@ -82,6 +82,22 @@ h2 {
     background-color: #fff;
 }
 
+#resetButton {
+    width: 100px;
+    height: 25px;
+    color: #fff;
+    font-weight: 700;
+    background-color: black;
+    border-radius: 20px;
+    border: none;
+    transition: .5s;
+}
+
+#resetButton:hover {
+    color: black;
+    background-color: #fff;
+}
+
 input {
     width: 90%;
     height: 25px;
